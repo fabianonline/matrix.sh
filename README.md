@@ -23,7 +23,7 @@ wrapped in &lt;pre&gt; tags.
 
 ## Usage
 ### Logging in
-Use `login`. The script will try to resolve delegation via the
+Use `--login`. The script will try to resolve delegation via the
 `/.well-known/matrix/server` path. If that doesn't work, you'll get an error
 message.
 
@@ -33,7 +33,7 @@ file allow accessing your homeserver, you should keep it's contents secret.
 Therefore, it will be created with access mode 600.
 
 ```
-$ ./matrix.sh login
+$ ./matrix.sh --login
 Address of the homeserver the account lives on: matrix.org
 Username on the server (just the local part, so e.g. 'bob'): bob
 bob's password:
@@ -50,7 +50,7 @@ It will show all joined rooms as well as rooms you are invited to. Selecting
 one of the latter will also accept the invitation and join that room.
 
 ```
-$ ./matrix.sh select-default-room
+$ ./matrix.sh --select-default-room
 Getting Rooms...
 Joined rooms:
   !GCHxYlasvdh778dsOx:matrix.org - Me and my server
