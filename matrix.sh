@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #set -x
 shopt -s extglob
-VERSION="0.3"
-LOG="true"
+VERSION="1.0"
+LOG="false"
 
 AUTHORIZATION="X-Dummy: 1"
 
@@ -15,31 +15,30 @@ help() {
 	version
 	echo
 	echo "Usage:"
-	echo "$0 <options> <message>"
+	echo "$0 <action> [<options>] [<message>]"
+	echo
 	echo "ACTIONS"
-	echo "  -l <server>  Login to a server."
-	echo "  -L           List rooms the matrix user joined or is invited to."
-	echo "  -s           Select a default room."
-	echo "  -h           This help."
+	echo "  login                Login to a server."
+	echo "  list-rooms           List rooms the matrix user joined or is invited to."
+	echo "  select-default-room  Select a default room."
+	echo "  help                 Show this help."
 	echo
 	echo "OPTIONS"
-	echo "  -r <room_id> Which room to send the message to."
-	echo "  -H           Enable HTML tags in message."
-	echo "  -P           Wraps the given message into <pre> and escapes all other HTML special chars."
-	echo
-	echo "FILES (message will be ignored)"
-	echo "  -f <file>    Send <file>."
-	echo "  -a <file>    Send <file> as audio."
-	echo "  -i <file>    Send <file> as image."
-	echo "  -v <file>    Send <file> as video."
+	echo "  --room=<room_id>     Which room to send the message to."
+	echo "  --html               Enable HTML tags in message."
+	echo "  --pre                Wraps the given message into <pre> and escapes all other HTML special chars."
+	echo "  --file=<file>        Send <file> to the room."
+	echo "  --image              Send the file as image."
+	echo "  --audio              Send the file as audio."
+	echo "  --video              Send the file as video."
 	echo
 	echo "If <message> is \"-\", stdin is used."
-	echo "See https://matrix.org/docs/spec/client_server/latest.html#m-room-message-msgtypes for a list of valid HTML tags for use with -H."
+	echo "See https://matrix.org/docs/spec/client_server/latest.html#m-room-message-msgtypes for a list of valid HTML tags for use with --html."
 	echo
 }
 
 _curl() {
-	curl -s --fail -H "$AUTHORIZATION" -H "User-Agent: matrix.sh/$VERSION" $*
+	curl -s --fail -H "$AUTHORIZATION" -H "User-Agent: matrix.sh/$VERSION" "$@"
 }
 
 die() {
@@ -63,7 +62,7 @@ query() {
 	type="$3"
 	log "POST $url"
 	response=$( _curl -X$type -H "Content-Type: application/json" --data "$data" "${MATRIX_HOMESERVER}${url}" )
-	if [ `jq -r .errcode <<<"$response"` != "null" ]; then
+	if [ ! `jq -r .errcode <<<"$response"` = "null" ]; then
 		echo
 		>&2 echo "An error occurred. The matrix server responded with:"
 		>&2 echo "`jq -r .errcode <<<"$response"` `jq -r .error <<<"$response"`"
@@ -100,6 +99,7 @@ hash curl >/dev/null 2>&1 || die "curl is required, but not installed."
 
 ############## Logic
 login() {
+	read -p "Address of the homeserver the account lives on: " MATRIX_HOMESERVER
 	MATRIX_HOMESERVER="https://${MATRIX_HOMESERVER#https://}"
 	identifier="`whoami`@`hostname` using matrix.sh"
 	identifier=`escape "$identifier"`
@@ -165,7 +165,7 @@ _send_message() {
 send_message() {
 	# Get the text. Try the last variable
 	text="$1"
-	[ "$text" = "-" ] || [ "$text" = "" ] && text=$(</dev/stdin)
+	[ "$text" = "-" ] && text=$(</dev/stdin)
 	if $PRE; then
 		text="${text//</&lt;}"
 		text="${text//>/&gt;}"
@@ -197,13 +197,12 @@ send_file() {
 	fi
 	filename=`basename "$FILE"`
 	log "filename: $filename"
-	filename=`jq -s -R . <<<"$filename"`
 	content_type=`file --brief --mime-type "$FILE"`
 	log "content-type: $content_type"
 	upload_file "$FILE" "$content_type" "$filename"
 	uri=`jq -r .content_uri <<<"$response"`
 	
-	data="{\"body\":$filename, \"msgtype\":\"$FILETYPE\", \"filename\":$filename, \"url\":\"$uri\"}"
+	data="{\"body\":`escape "$filename"`, \"msgtype\":\"$FILE_TYPE\", \"filename\":`escape "$filename"`, \"url\":\"$uri\"}"
 	_send_message "$data"
 }
 
@@ -211,63 +210,82 @@ send_file() {
 ######## Program flow stuff
 [ -r ~/.matrix.sh ] && source ~/.matrix.sh
 
-ACTION="send_message"
+ACTION="send"
 HTML="false"
 PRE="false"
-while getopts "l:shr:a:f:i:v:HPL" opt; do
-	case $opt in
-		l)
-			ACTION="login"
-			MATRIX_HOMESERVER="$OPTARG"
+FILE=""
+FILE_TYPE="m.file"
+
+for i in "$@"; do
+	case $i in
+		# Options
+		--room=*)
+			MATRIX_ROOM_ID="${i#*=}"
+			shift
 			;;
-		L)
-			ACTION="list_rooms"
-			;;
-		s)
-			ACTION="select_room"
-			;;
-		h)
-			ACTION="help"
-			;;
-		H)
+		--html)
 			HTML="true"
+			shift
 			;;
-		P)
+		--pre)
 			PRE="true"
+			shift
 			;;
-		r)
-			MATRIX_ROOM_ID="$OPTARG"
+		--file=*)
+			FILE="${i#*=}"
+			ACTION="send"
+			shift
 			;;
-		f)
-			ACTION="send_file"
-			FILETYPE="m.file"
-			FILE="$OPTARG"
+		--image)
+			FILE_TYPE="m.image"
+			shift
 			;;
-		v)
-			ACTION="send_file"
-			FILETYPE="m.video"
-			FILE="$OPTARG"
+		--audio)
+			FILE_TYPE="m.audio"
+			shift
 			;;
-		i)
-			ACTION="send_file"
-			FILETYPE="m.image"
-			FILE="$OPTARG"
+		--video)
+			FILE_TYPE="m.video"
+			shift
 			;;
-		a)
-			ACTION="send_file"
-			FILETYPE="m.audio"
-			FILE="$OPTARG"
+		
+		# Actions
+		login)
+			ACTION="login"
+			shift
 			;;
-		\?)
-			die "Invalid option -$OPTARG"
+		list-rooms)
+			ACTION="list_rooms"
+			shift
 			;;
-		:)
-			die "Option -$OPTARG requires an argument"
+		select-default-room)
+			ACTION="select_room"
+			shift
 			;;
-	esac
+		send-message|send)
+			ACTION="send"
+			shift
+			;;
+		help|--help|-h)
+			ACTION="help"
+			shift
+			;;
+			
+		--*)
+			die "Unknown option $i"
+			;;
+		
+		*)
+			TEXT="$i"
+			shift
+			;;
+	esac	
 done
 
-shift $((OPTIND - 1))
+if [ "$ACTION" = "" ]; then
+	help
+	exit 1
+fi
 
 [ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use -l <homeserver> to log into an account on the given server and persist those settings."
 
@@ -287,10 +305,13 @@ if [ "$ACTION" = "select_room" ]; then
 	select_room
 elif [ "$ACTION" = "list_rooms" ]; then
 	list_rooms
-elif [ "$ACTION" = "send_file" ]; then
-	send_file
-elif [ "$ACTION" = "send_message" ]; then
-	send_message "$1"
+elif [ "$ACTION" = "send" ]; then
+	if [ "$FILE" = "" ]; then
+		[ -z "$TEXT" ] && die "No message to send given."
+		send_message "$TEXT"
+	else
+		send_file
+	fi
 fi
     
 

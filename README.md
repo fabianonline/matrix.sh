@@ -23,7 +23,7 @@ wrapped in &lt;pre&gt; tags.
 
 ## Usage
 ### Logging in
-Use `-l <homeserver>`. The script will try to resolve delegation via the
+Use `login`. The script will try to resolve delegation via the
 `/.well-known/matrix/server` path. If that doesn't work, you'll get an error
 message.
 
@@ -33,7 +33,8 @@ file allow accessing your homeserver, you should keep it's contents secret.
 Therefore, it will be created with access mode 600.
 
 ```
-$ ./matrix.sh -l matrix.org
+$ ./matrix.sh login
+Address of the homeserver the account lives on: matrix.org
 Username on the server (just the local part, so e.g. 'bob'): bob
 bob's password:
 
@@ -49,7 +50,7 @@ It will show all joined rooms as well as rooms you are invited to. Selecting
 one of the latter will also accept the invitation and join that room.
 
 ```
-$ ./matrix.sh -s
+$ ./matrix.sh select-default-room
 Getting Rooms...
 Joined rooms:
   !GCHxYlasvdh778dsOx:matrix.org - Me and my server
@@ -68,37 +69,40 @@ Saved default room to ~/.matrix.sh
 ### Sending messages
 #### Sending a normal text message:
 ```
-$ ./matrix.sh "Hello World"
+$ ./matrix.sh send "Hello World"
 ```
 
 #### Sending a text message with markup:
 ```
-$ ./matrix.sh -H "This is <strong>very important</strong>."
+$ ./matrix.sh send --html "This is <strong>very important</strong>."
 ```
 
 #### Piping command output:
 ```
-$ echo "Hello" | ./matrix.sh
+$ echo "Hello" | ./matrix.sh send
 ```
 
 #### Code formatting:
-You can use `-P` to send messages formatted as code. This will also escape
+You can use `--pre` to send messages formatted as code. This will also escape
 HTML tags.
 ```
-$ ls -l | ./matrix.sh -P
+$ ls -l | ./matrix.sh send --pre
 ```
 
 #### Sending files:
 ```
-$ ./matrix.sh -f upload.zip
+$ ./matrix.sh send --file=upload.zip
 ```
-Use `-a`, `-i`, `-v` instead of `-f` to send files as audio, images or
-video, respectively.
+Additionally use `--audio`, `-image` or `--video` to send files as audio, images or
+video, respectively:
+```
+$ ./matrix.sh send --file=IMG1234.jpg --image
+```
 
 #### Providing a room:
-You can use `-r` to provide a room_id. This supersedes the default room.
+You can use `--room=<room_id>` to provide a room_id. This supersedes the default room.
 ```
-$ ./matrix.sh -r '!OEassajhhkasLULVAa:matrix.org' "Hello World"
+$ ./matrix.sh send --room_id='!OEassajhhkasLULVAa:matrix.org' "Hello World"
 ```
 (Note: bash doesn't like exclamation marks in double quoted strings. So we
 use single quotes for the room id.)
