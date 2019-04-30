@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #set -x
+
+# Needed for the strip-HTML-from-string-Regexp-like stuff.
 shopt -s extglob
-VERSION="1.0"
-LOG="false"
+VERSION="1.1"
+LOG="true"
 
 AUTHORIZATION="X-Dummy: 1"
 
@@ -18,19 +20,25 @@ help() {
 	echo "$0 <action> [<options>] [<message>]"
 	echo
 	echo "ACTIONS"
-	echo "  login                Login to a server."
-	echo "  list-rooms           List rooms the matrix user joined or is invited to."
-	echo "  select-default-room  Select a default room."
-	echo "  help                 Show this help."
+	echo "  --login                [*] Login to a server."
+	echo "  --list-rooms               List rooms the matrix user joined or is invited to."
+	echo "  --select-default-room  [*] Select a default room."
+	echo "  --join-room            [*] Joins a room."
+	echo "  --leave-room           [*] Leaves a room."
+	echo "  --invite-user          [*] Invites a user to a room."
+	echo "  --send                     Send a message. [DEFAULT]"
+	echo "  --help                     Show this help."
 	echo
 	echo "OPTIONS"
-	echo "  --room=<room_id>     Which room to send the message to."
-	echo "  --html               Enable HTML tags in message."
-	echo "  --pre                Wraps the given message into <pre> and escapes all other HTML special chars."
-	echo "  --file=<file>        Send <file> to the room."
-	echo "  --image              Send the file as image."
-	echo "  --audio              Send the file as audio."
-	echo "  --video              Send the file as video."
+	echo "  --room=<room_id>           Which room to send the message to."
+	echo "  --html                     Enable HTML tags in message."
+	echo "  --pre                      Wraps the given message into <pre> and escapes all other HTML special chars."
+	echo "  --file=<file>              Send <file> to the room."
+	echo "  --image                    Send the file as image."
+	echo "  --audio                    Send the file as audio."
+	echo "  --video                    Send the file as video."
+	echo
+	echo "Actions marked with [*] are done interactively."
 	echo
 	echo "If <message> is \"-\", stdin is used."
 	echo "See https://matrix.org/docs/spec/client_server/latest.html#m-room-message-msgtypes for a list of valid HTML tags for use with --html."
@@ -38,7 +46,7 @@ help() {
 }
 
 _curl() {
-	curl -s --fail -H "$AUTHORIZATION" -H "User-Agent: matrix.sh/$VERSION" "$@"
+	curl -s -H "$AUTHORIZATION" -H "User-Agent: matrix.sh/$VERSION" "$@"
 }
 
 die() {
@@ -52,22 +60,23 @@ log() {
 
 get() {
 	url="$1"
+	shift
 	log "GET $url"
-	response=`_curl "${MATRIX_HOMESERVER}${url}"`
+	response=`_curl "$@" "${MATRIX_HOMESERVER}${url}"`
 }
 
 query() {
 	url="$1"
 	data="$2"
 	type="$3"
-	log "POST $url"
+	log "$type $url"
 	response=$( _curl -X$type -H "Content-Type: application/json" --data "$data" "${MATRIX_HOMESERVER}${url}" )
 	if [ ! `jq -r .errcode <<<"$response"` = "null" ]; then
 		echo
 		>&2 echo "An error occurred. The matrix server responded with:"
-		>&2 echo "`jq -r .errcode <<<"$response"` `jq -r .error <<<"$response"`"
-		>&2 echo "Following request was sent to ${url}:"
-		>&2 jq . <<<"$data"
+		>&2 echo "`jq -r .errcode <<<"$response"`: `jq -r .error <<<"$response"`"
+		#>&2 echo "Following request was sent to ${url}:"
+		#>&2 jq . <<<"$data"
 		exit 1
 	fi
 }
@@ -104,8 +113,8 @@ login() {
 	identifier="`whoami`@`hostname` using matrix.sh"
 	identifier=`escape "$identifier"`
 	log "Trying homeserver: $MATRIX_HOMESERVER"
-	if ! get "/_matrix/client/versions"; then
-		if ! get "/.well-known/matrix/server"; then
+	if ! get "/_matrix/client/versions" --fail ; then
+		if ! get "/.well-known/matrix/server" --fail ; then
 			die "$MATRIX_HOMESERVER does not appear to be a matrix homeserver. Trying /.well-known/matrix/server failed. Please ask your homeserver's administrator for the correct address of the homeserver."
 		fi
 		MATRIX_HOMESERVER=`jq -r '.["m.server"]' <<<"$response"`
@@ -128,7 +137,7 @@ login() {
 	
 	echo
 	echo "Success. Access token saved to ~/.matrix.sh."
-	echo "You should now use $0 -s to select a default room."
+	echo "You should now use $0 --select-default-room to select a default room."
 }	
 
 list_rooms() {
@@ -154,6 +163,26 @@ select_room() {
 	echo -e "MATRIX_ROOM_ID=\"$room\"\n" >> ~/.matrix.sh
 	echo
 	echo "Saved default room to ~/.matrix.sh"
+}
+
+join_room() {
+	read -p "Enter the ID or address of the room you want me to join: " room
+	post "/_matrix/client/r0/rooms/$room/join"
+	echo "Success."
+}
+
+leave_room() {
+	list_rooms
+	read -p "Enter the ID of the room you want me to leave: " room
+	[ "$room" = "$MATRIX_ROOM_ID" ] && die "It appears you are trying to leave the room that is currently set as default room. I'm sorry Dave, but I can't allow you to do that."
+	post "/_matrix/client/r0/rooms/$room/leave"
+	echo "Success."
+}
+
+invite_user() {
+	read -p "Enter the user ID you want to invite: " user
+	post "/_matrix/client/r0/rooms/$MATRIX_ROOM_ID/invite" "{\"user_id\":\"$user\"}"
+	echo "Success."
 }
 
 _send_message() {
@@ -250,23 +279,35 @@ for i in "$@"; do
 			;;
 		
 		# Actions
-		login)
+		--login)
 			ACTION="login"
 			shift
 			;;
-		list-rooms)
+		--list-rooms)
 			ACTION="list_rooms"
 			shift
 			;;
-		select-default-room)
+		--select-default-room)
 			ACTION="select_room"
 			shift
 			;;
-		send-message|send)
+		--join-room)
+			ACTION="join_room"
+			shift
+			;;
+		--leave-room)
+			ACTION="leave_room"
+			shift
+			;;
+		--invite-user)
+			ACTION="invite_user"
+			shift
+			;;
+		--send-message|send)
 			ACTION="send"
 			shift
 			;;
-		help|--help|-h)
+		--help|-h)
 			ACTION="help"
 			shift
 			;;
@@ -287,7 +328,7 @@ if [ "$ACTION" = "" ]; then
 	exit 1
 fi
 
-[ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use -l <homeserver> to log into an account on the given server and persist those settings."
+[ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use '$0 --login' to log into an account on the given server and persist those settings."
 
 if [ "$ACTION" = "login" ]; then
 	login
@@ -297,7 +338,7 @@ elif [ "$ACTION" = "help" ]; then
 	exit 1
 fi
 
-[ -z $MATRIX_TOKEN ] && die "No matrix token set. Use -l to login."
+[ -z $MATRIX_TOKEN ] && die "No matrix token set. Use '$0 --login' to login."
 
 AUTHORIZATION="Authorization: Bearer $MATRIX_TOKEN"
 
@@ -305,6 +346,12 @@ if [ "$ACTION" = "select_room" ]; then
 	select_room
 elif [ "$ACTION" = "list_rooms" ]; then
 	list_rooms
+elif [ "$ACTION" = "join_room" ]; then
+	join_room
+elif [ "$ACTION" = "leave_room" ]; then
+	leave_room
+elif [ "$ACTION" = "invite_user" ]; then
+	invite_user
 elif [ "$ACTION" = "send" ]; then
 	if [ "$FILE" = "" ]; then
 		[ -z "$TEXT" ] && die "No message to send given."

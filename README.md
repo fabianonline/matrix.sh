@@ -69,40 +69,52 @@ Saved default room to ~/.matrix.sh
 ### Sending messages
 #### Sending a normal text message:
 ```
-$ ./matrix.sh send "Hello World"
+$ ./matrix.sh --send "Hello World"
+```
+
+Since `--send` is the default action, you can simply omit it:
+
+```
+$ ./matrix.sh "Hello World"
 ```
 
 #### Sending a text message with markup:
 ```
-$ ./matrix.sh send --html "This is <strong>very important</strong>."
+$ ./matrix.sh --html "This is <strong>very important</strong>."
 ```
 
 #### Piping command output:
 ```
-$ echo "Hello" | ./matrix.sh send
+$ echo "Hello" | ./matrix.sh
 ```
 
 #### Code formatting:
 You can use `--pre` to send messages formatted as code. This will also escape
 HTML tags.
 ```
-$ ls -l | ./matrix.sh send --pre
+$ ls -l | ./matrix.sh --pre
 ```
 
 #### Sending files:
 ```
-$ ./matrix.sh send --file=upload.zip
+$ ./matrix.sh --file=upload.zip
 ```
 Additionally use `--audio`, `-image` or `--video` to send files as audio, images or
 video, respectively:
 ```
-$ ./matrix.sh send --file=IMG1234.jpg --image
+$ ./matrix.sh --file=IMG1234.jpg --image
 ```
 
 #### Providing a room:
 You can use `--room=<room_id>` to provide a room_id. This supersedes the default room.
 ```
-$ ./matrix.sh send --room_id='!OEassajhhkasLULVAa:matrix.org' "Hello World"
+$ ./matrix.sh --room_id='!OEassajhhkasLULVAa:matrix.org' "Hello World"
 ```
 (Note: bash doesn't like exclamation marks in double quoted strings. So we
 use single quotes for the room id.)
+
+#### Other actions are:
+* `--help` shows all available commands and options.
+* `--join-room` joins a room. You will be asked for the room id.
+* `--invite-user` invites a user into the default room or the one given by `--room`. You will be asked for the user id.
+* `--leave-room` leaves a room. You will be asked which room to leave.
