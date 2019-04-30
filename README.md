@@ -27,6 +27,11 @@ Use `-l <homeserver>`. The script will try to resolve delegation via the
 `/.well-known/matrix/server` path. If that doesn't work, you'll get an error
 message.
 
+Your login token will be saved to the file `.matrix.sh` in your home folder.
+If it already exists, it will be overwritten. Since the contents of this
+file allow accessing your homeserver, you should keep it's contents secret.
+Therefore, it will be created with access mode 600.
+
 ```
 $ ./matrix.sh -l matrix.org
 Username on the server (just the local part, so e.g. 'bob'): bob
@@ -39,6 +44,10 @@ You should now use ./matrix.sh -s to select a default room.
 ### Selecting a default room
 You can select a default room which will be used if you don't provide a
 room_id at runtime.
+
+It will show all joined rooms as well as rooms you are invited to. Selecting
+one of the latter will also accept the invitation and join that room.
+
 ```
 $ ./matrix.sh -s
 Getting Rooms...
