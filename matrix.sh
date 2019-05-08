@@ -4,7 +4,7 @@
 # Needed for the strip-HTML-from-string-Regexp-like stuff.
 shopt -s extglob
 VERSION="1.1"
-LOG="true"
+LOG="false"
 
 AUTHORIZATION="X-Dummy: 1"
 
