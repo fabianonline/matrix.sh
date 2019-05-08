@@ -328,8 +328,6 @@ if [ "$ACTION" = "" ]; then
 	exit 1
 fi
 
-[ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use '$0 --login' to log into an account on the given server and persist those settings."
-
 if [ "$ACTION" = "login" ]; then
 	login
 	# Do not exit here. We want select_room to run as well.
@@ -338,6 +336,8 @@ elif [ "$ACTION" = "help" ]; then
 	exit 1
 fi
 
+[ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use '$0 --login' to log into an account on a homeserver and persist those settings."
+	
 [ -z $MATRIX_TOKEN ] && die "No matrix token set. Use '$0 --login' to login."
 
 AUTHORIZATION="Authorization: Bearer $MATRIX_TOKEN"
