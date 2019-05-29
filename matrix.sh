@@ -3,7 +3,7 @@
 
 # Needed for the strip-HTML-from-string-Regexp-like stuff.
 shopt -s extglob
-VERSION="1.1"
+VERSION="1.2"
 LOG="false"
 
 AUTHORIZATION="X-Dummy: 1"
