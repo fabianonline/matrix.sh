@@ -34,6 +34,7 @@ help() {
 	echo "  --token=<token>            Access token to use. Only useful if you don't want to use --login."
 	echo "  --homeserver=<url>         Homeserver address to use. Only useful if you don't want to use --login. Must start with \"https\". Must not have a trailing slash."
 	echo "  --room=<room_id>           Which room to send the message to."
+	echo "  --notice                   Send a notice instead of a message."
 	echo "  --html                     Enable HTML tags in message."
 	echo "  --pre                      Wraps the given message into <pre> and escapes all other HTML special chars."
 	echo "  --file=<file>              Send <file> to the room."
@@ -221,7 +222,7 @@ send_message() {
 	if $HTML; then
 		clean_body="${text//<+([a-zA-Z0-9\"\'= \/])>/}"
 		clean_body=`escape "$clean_body"`
-		data="{\"body\": $clean_body, \"msgtype\":\"m.text\",\"formatted_body\":$text,\"format\":\"org.matrix.custom.html\"}"
+		data="{\"body\": $clean_body, \"msgtype\":\"$MESSAGE_TYPE\",\"formatted_body\":$text,\"format\":\"org.matrix.custom.html\"}"
 	else
 		data="{\"body\": $text, \"msgtype\":\"m.text\"}"
 	fi
@@ -281,6 +282,10 @@ for i in "$@"; do
 			;;
 		--pre)
 			PRE="true"
+			shift
+			;;
+		--notice)
+			MESSAGE_TYPE="m.notice"
 			shift
 			;;
 		--file=*)
