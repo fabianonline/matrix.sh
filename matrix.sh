@@ -130,7 +130,7 @@ login() {
 	echo
 	post "/_matrix/client/r0/login" "{\"type\":\"m.login.password\", \"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\",\"initial_device_display_name\":$identifier}"
 	
-	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"$SERVER\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
+	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"$MATRIX_HOMESERVER\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
 	echo -e "$data" > ~/.matrix.sh
 	chmod 600 ~/.matrix.sh
 	source ~/.matrix.sh
