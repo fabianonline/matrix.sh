@@ -30,6 +30,8 @@ help() {
 	echo "  --help                     Show this help."
 	echo
 	echo "OPTIONS"
+	echo "  --token=<token>            Access token to use. Only useful if you don't want to use --login."
+	echo "  --homeserver=<url>         Homeserver address to use. Only useful if you don't want to use --login. Must start with \"https\". Must not have a trailing slash."
 	echo "  --room=<room_id>           Which room to send the message to."
 	echo "  --html                     Enable HTML tags in message."
 	echo "  --pre                      Wraps the given message into <pre> and escapes all other HTML special chars."
@@ -110,6 +112,7 @@ hash curl >/dev/null 2>&1 || die "curl is required, but not installed."
 login() {
 	read -p "Address of the homeserver the account lives on: " MATRIX_HOMESERVER
 	MATRIX_HOMESERVER="https://${MATRIX_HOMESERVER#https://}"
+	MATRIX_HOMESERVER="${MATRIX_HOMESERVER%/}" # Strip trailing slash
 	identifier="`whoami`@`hostname` using matrix.sh"
 	identifier=`escape "$identifier"`
 	log "Trying homeserver: $MATRIX_HOMESERVER"
@@ -130,7 +133,7 @@ login() {
 	echo
 	post "/_matrix/client/r0/login" "{\"type\":\"m.login.password\", \"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\",\"initial_device_display_name\":$identifier}"
 	
-	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"$MATRIX_HOMESERVER\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
+	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"${MATRIX_HOMESERVER%/}\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
 	echo -e "$data" > ~/.matrix.sh
 	chmod 600 ~/.matrix.sh
 	source ~/.matrix.sh
@@ -244,12 +247,21 @@ HTML="false"
 PRE="false"
 FILE=""
 FILE_TYPE="m.file"
+MESSAGE_TYPE="m.text"
 
 for i in "$@"; do
 	case $i in
 		# Options
+		--token=*)
+			MATRIX_TOKEN="${i#*=}"
+			shift
+			;;
 		--room=*)
 			MATRIX_ROOM_ID="${i#*=}"
+			shift
+			;;
+		--homeserver=*)
+			MATRIX_HOMESERVER="${i#*=}"
 			shift
 			;;
 		--html)

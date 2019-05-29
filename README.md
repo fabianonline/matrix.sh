@@ -66,6 +66,13 @@ Enter the room_id (the thing at the beginning of the line):
 Saved default room to ~/.matrix.sh
 ```
 
+### Without logging in
+You can also use this script without logging in first. If you have an access
+token, you can use it like this:
+```
+$ ./matrix.sh --homeserver=https://matrix.org --token=abcdefg --room=\!2o587thjlgjHUIUHni:matrix.org ...
+```
+
 ### Sending messages
 #### Sending a normal text message:
 ```
