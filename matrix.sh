@@ -26,6 +26,7 @@ help() {
 	echo "  --join-room            [*] Joins a room."
 	echo "  --leave-room           [*] Leaves a room."
 	echo "  --invite-user          [*] Invites a user to a room."
+	echo "  --change-name          [*] Changes the display name of the matrix user."
 	echo "  --send                     Send a message. [DEFAULT]"
 	echo "  --help                     Show this help."
 	echo
@@ -188,6 +189,16 @@ invite_user() {
 	echo "Success."
 }
 
+change_name() {
+	echo "Changing my name."
+	get "/_matrix/client/r0/account/whoami"
+	user_id=`jq -r ".user_id" <<< "$response"`
+	get "/_matrix/client/r0/profile/$user_id/displayname"
+	echo "Old name: `jq -r ".displayname" <<< "$response"`"
+	read -p "New name: " name
+	put "/_matrix/client/r0/profile/$user_id/displayname" "{\"displayname\": `escape "$name"`}"
+}
+
 _send_message() {
 	data="$1"
 	txn=`date +%s%N`
@@ -319,6 +330,10 @@ for i in "$@"; do
 			ACTION="send"
 			shift
 			;;
+		--change-name)
+			ACTION="change_name"
+			shift
+			;;
 		--help|-h)
 			ACTION="help"
 			shift
@@ -364,6 +379,8 @@ elif [ "$ACTION" = "leave_room" ]; then
 	leave_room
 elif [ "$ACTION" = "invite_user" ]; then
 	invite_user
+elif [ "$ACTION" = "change_name" ]; then
+	change_name
 elif [ "$ACTION" = "send" ]; then
 	if [ "$FILE" = "" ]; then
 		[ -z "$TEXT" ] && die "No message to send given."
