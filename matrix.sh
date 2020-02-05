@@ -235,7 +235,7 @@ send_file() {
 	# Query max filesize from server
 	get "/_matrix/media/r0/config"
 	max_size=`jq -r ".[\"m.upload.size\"]" <<<"$response"`
-	size=$(stat -c%s "$FILE")
+	size=$(du -b "$FILE" | cut -f1)
 	if (( size > max_size )); then
 		die "File is too big. Size is $size, max_size is $max_size."
 	fi
