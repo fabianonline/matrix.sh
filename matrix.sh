@@ -331,7 +331,7 @@ for i in "$@"; do
 			ACTION="invite_user"
 			shift
 			;;
-		--send-message|send)
+		--send-message|--send)
 			ACTION="send"
 			shift
 			;;
