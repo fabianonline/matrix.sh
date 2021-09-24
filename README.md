@@ -100,14 +100,14 @@ $ ./matrix.sh --html "This is <strong>very important</strong>."
 
 #### Piping command output:
 ```
-$ echo "Hello" | ./matrix.sh
+$ echo "Hello" | ./matrix.sh -
 ```
 
 #### Code formatting:
 You can use `--pre` to send messages formatted as code. This will also escape
 HTML tags.
 ```
-$ ls -l | ./matrix.sh --pre
+$ ls -l | ./matrix.sh --pre -
 ```
 
 #### Sending files:
