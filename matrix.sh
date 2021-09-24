@@ -3,7 +3,7 @@
 
 # Needed for the strip-HTML-from-string-Regexp-like stuff.
 shopt -s extglob
-VERSION="1.2"
+VERSION="1.3"
 LOG="false"
 
 AUTHORIZATION="X-Dummy: 1"
@@ -41,6 +41,7 @@ help() {
 	echo "  --image                    Send the file as image."
 	echo "  --audio                    Send the file as audio."
 	echo "  --video                    Send the file as video."
+	echo "  --identifier=<ident>       Custom identifier for this device. Default is '`whoami`@`hostname` using matrix.sh'."
 	echo
 	echo "Actions marked with [*] are done interactively."
 	echo
@@ -115,8 +116,7 @@ login() {
 	read -p "Address of the homeserver the account lives on: " MATRIX_HOMESERVER
 	MATRIX_HOMESERVER="https://${MATRIX_HOMESERVER#https://}"
 	MATRIX_HOMESERVER="${MATRIX_HOMESERVER%/}" # Strip trailing slash
-	identifier="`whoami`@`hostname` using matrix.sh"
-	identifier=`escape "$identifier"`
+	ident=`escape "$IDENTIFIER"`
 	log "Trying homeserver: $MATRIX_HOMESERVER"
 	if ! get "/_matrix/client/versions" --fail ; then
 		if ! get "/.well-known/matrix/server" --fail ; then
@@ -133,7 +133,7 @@ login() {
 	read -p "Username on the server (just the local part, so e.g. 'bob'): " username
 	read -sp "${username}'s password: " password
 	echo
-	post "/_matrix/client/r0/login" "{\"type\":\"m.login.password\", \"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\",\"initial_device_display_name\":$identifier}"
+	post "/_matrix/client/r0/login" "{\"type\":\"m.login.password\", \"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\",\"initial_device_display_name\":$ident}"
 	
 	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"${MATRIX_HOMESERVER%/}\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
 	echo -e "$data" > ~/.matrix.sh
@@ -260,6 +260,7 @@ PRE="false"
 FILE=""
 FILE_TYPE="m.file"
 MESSAGE_TYPE="m.text"
+IDENTIFIER="`whoami`@`hostname` using matrix.sh"
 
 for i in "$@"; do
 	case $i in
@@ -303,6 +304,10 @@ for i in "$@"; do
 			;;
 		--video)
 			FILE_TYPE="m.video"
+			shift
+			;;
+		--identifier=*)
+			IDENTIFIER="${i#*=}"
 			shift
 			;;
 		

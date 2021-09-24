@@ -42,6 +42,14 @@ Success. Access token saved to ~/.matrix.sh
 You should now use ./matrix.sh -s to select a default room.
 ```
 
+Login also sets a name for the device you're using to connect. Per default,
+this is `<user>@<host> using matrix.sh`, but you can set another name using
+the `--identifier` option:
+
+```
+$ ./matrix.sh --login --identifier="linux server @home"
+```
+
 ### Selecting a default room
 You can select a default room which will be used if you don't provide a
 room_id at runtime.
