@@ -17,6 +17,8 @@ wrapped in &lt;pre&gt; tags.
 * Install dependencies:
     * `curl`
     * `jq`
+    * `file`
+    * `coreutils` (required for `du -b`)
 
     Something like `sudo apt-get install curl jq`.
 * Use it to log in. See Usage.
