@@ -76,7 +76,7 @@ query() {
 	type="$3"
 	log "$type $url"
 	response=$( _curl -X$type -H "Content-Type: application/json" --data "$data" "${MATRIX_HOMESERVER}${url}" )
-	if [ ! `jq -r .errcode <<<"$response"` = "null" ]; then
+	if [ ! `jq -r .errcode <<<"$response"` == "null" ]; then
 		echo
 		>&2 echo "An error occurred. The matrix server responded with:"
 		>&2 echo "`jq -r .errcode <<<"$response"`: `jq -r .error <<<"$response"`"
@@ -102,7 +102,9 @@ upload_file() {
 }
 
 escape() {
-	jq -s -R . <<<"$1"
+  local multil=
+  [ $(echo "$1" | wc -l) -gt 1 ] && multil="-s"
+	jq $multil -R . <<<"$1"
 }
 
 ############## Check for dependencies
