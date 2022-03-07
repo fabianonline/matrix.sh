@@ -123,7 +123,7 @@ $ ./matrix.sh --file=IMG1234.jpg --image
 #### Providing a room:
 You can use `--room=<room_id>` to provide a room_id. This supersedes the default room.
 ```
-$ ./matrix.sh --room_id='!OEassajhhkasLULVAa:matrix.org' "Hello World"
+$ ./matrix.sh --room='!OEassajhhkasLULVAa:matrix.org' "Hello World"
 ```
 (Note: bash doesn't like exclamation marks in double quoted strings. So we
 use single quotes for the room id.)
