@@ -114,7 +114,7 @@ $ ls -l | ./matrix.sh --pre -
 ```
 $ ./matrix.sh --file=upload.zip
 ```
-Additionally use `--audio`, `-image` or `--video` to send files as audio, images or
+Additionally use `--audio`, `--image` or `--video` to send files as audio, images or
 video, respectively:
 ```
 $ ./matrix.sh --file=IMG1234.jpg --image
