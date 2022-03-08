@@ -102,16 +102,14 @@ upload_file() {
 }
 
 escape() {
-  local multil=
-  [ $(echo "$1" | wc -l) -gt 1 ] && multil="-s"
+	local multil=
+	[ $(echo "$1" | wc -l) -gt 1 ] && multil="-s"
 	jq $multil -R . <<<"$1"
 }
 
 ############## Check for dependencies
 hash jq >/dev/null 2>&1 || die "jq is required, but not installed."
 hash curl >/dev/null 2>&1 || die "curl is required, but not installed."
-
-
 
 ############## Logic
 login() {
@@ -338,7 +336,7 @@ for i in "$@"; do
 			ACTION="invite_user"
 			shift
 			;;
-		--send-message|send)
+		--send-message|--send)
 			ACTION="send"
 			shift
 			;;
