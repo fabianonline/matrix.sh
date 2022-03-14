@@ -9,7 +9,7 @@ LOG="false"
 AUTHORIZATION="X-Dummy: 1"
 
 version() {
-  cat <<VERSION_EOF
+	cat <<VERSION_EOF
 matrix.sh $VERSION
 forked from "matrix.sh by Fabian Schlenz"
 by Martin Winkler
@@ -132,17 +132,17 @@ login() {
 			die "Delegation led us to $MATRIX_HOMESERVER, but it does not appear to be a matrix homeserver. Please ask your homeserver's administrator for the correct address of the server."
 		fi
 	fi
-	
+
 	read -p "Username on the server (just the local part, so e.g. 'bob'): " username
 	read -sp "${username}'s password: " password
 	echo
 	post "/_matrix/client/r0/login" "{\"type\":\"m.login.password\", \"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\",\"initial_device_display_name\":$ident}"
-	
+
 	data="MATRIX_TOKEN=\"`jq -r .access_token <<<"$response"`\"\nMATRIX_HOMESERVER=\"${MATRIX_HOMESERVER%/}\"\nMATRIX_USER=\"`jq -r .user_id <<<"$response"`\"\n"
 	echo -e "$data" > ~/.matrix.sh
 	chmod 600 ~/.matrix.sh
 	source ~/.matrix.sh
-	
+
 	echo
 	echo "Success. Access token saved to ~/.matrix.sh."
 	echo "You should now use $0 --select-default-room to select a default room."
@@ -151,21 +151,21 @@ login() {
 list_rooms() {
 	echo "Getting Rooms..."
 	get '/_matrix/client/r0/sync'
-	
+
 	local rooms=$(jq -r '.rooms.join | (to_entries[] | "  \(.key) - \(((.value.state.events + .value.timeline.events)[] | select(.type=="m.room.name") | .content.name) // "<Unnamed>")") // "  NONE"' <<<"$response" 2>/dev/null)
 	if [ -z "$rooms" ]; then
-    echo "I have not joined any rooms yet"  
-  else
-    echo "Joined rooms:"
-    echo "$rooms"
-  fi
+		echo "I have not joined any rooms yet"  
+	else
+		echo "Joined rooms:"
+		echo "$rooms"
+	fi
 	local roomsInv=$(jq -r '.rooms.invite | (to_entries[] | "  \(.key) - \((.value.invite_state.events[] | select(.type=="m.room.name") | .content.name) // "Unnamed")") // "  NONE"' <<<"$response" 2>/dev/null)
 	echo
 	if [ -z "$roomsInv" ]; then
-	  echo "I'm not invited into any rooms"
+		echo "I'm not invited into any rooms"
 	else
-	  echo "Rooms I'm invited to:"
-	  echo "$roomsInv"
+		echo "Rooms I'm invited to:"
+		echo "$roomsInv"
 	fi
 }	
 
@@ -173,11 +173,11 @@ select_room() {
 	list_rooms
 	echo "Which room do you want to use?"
 	read -p "Enter the room_id (the thing at the beginning of the line): " room
-	
+
 	# The chosen could be a room we are only invited to. So we send a join command.
 	# If we already are a member of this room, nothing will happen.
 	post "/_matrix/client/r0/rooms/$room/join"
-	
+
 	echo -e "MATRIX_ROOM_ID=\"$room\"\n" >> ~/.matrix.sh
 	echo
 	echo "Saved default room to ~/.matrix.sh"
@@ -229,9 +229,9 @@ send_message() {
 		text="<pre>$text</pre>"
 		HTML="true"
 	fi
-	
+
 	text=`escape "$text"`
-	
+
 	if $HTML; then
 		clean_body="${text//<+([a-zA-Z0-9\"\'= \/])>/}"
 		clean_body=`escape "$clean_body"`
@@ -244,7 +244,7 @@ send_message() {
 
 send_file() {
 	[ ! -e "$FILE" ] && die "File $FILE does not exist."
-	
+
 	# Query max filesize from server
 	get "/_matrix/media/r0/config"
 	max_size=$(jq -r ".[\"m.upload.size\"]" <<<"$response")
@@ -264,7 +264,7 @@ send_file() {
 	log "content-type: $content_type"
 	upload_file "$FILE" "$content_type" "$filename"
 	uri=$(jq -r .content_uri <<<"$response")
-	
+
 	data="{\"body\":`escape "$filename"`, \"msgtype\":\"$FILE_TYPE\", \"filename\":`escape "$filename"`, \"url\":\"$uri\"}"
 	_send_message "$data"
 }
@@ -329,7 +329,7 @@ for i in "$@"; do
 			IDENTIFIER="${i#*=}"
 			shift
 			;;
-		
+
 		# Actions
 		--login)
 			ACTION="login"
@@ -367,11 +367,11 @@ for i in "$@"; do
 			ACTION="help"
 			shift
 			;;
-			
+
 		--*)
 			die "Unknown option $i"
 			;;
-		
+
 		*)
 			TEXT="$i"
 			shift
@@ -393,7 +393,7 @@ elif [ "$ACTION" = "help" ]; then
 fi
 
 [ -z $MATRIX_HOMESERVER ] && die "No homeserver set. Use '$0 --login' to log into an account on a homeserver and persist those settings."
-	
+
 [ -z $MATRIX_TOKEN ] && die "No matrix token set. Use '$0 --login' to login."
 
 AUTHORIZATION="Authorization: Bearer $MATRIX_TOKEN"
