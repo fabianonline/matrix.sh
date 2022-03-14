@@ -3,14 +3,17 @@
 
 # Needed for the strip-HTML-from-string-Regexp-like stuff.
 shopt -s extglob
-VERSION="1.3"
+VERSION="1.4"
 LOG="false"
 
 AUTHORIZATION="X-Dummy: 1"
 
 version() {
-	echo "matrix.sh $VERSION"
-	echo "by Fabian Schlenz"
+  cat <<VERSION_EOF
+matrix.sh $VERSION
+forked from "matrix.sh by Fabian Schlenz"
+by Martin Winkler
+VERSION_EOF
 }
 
 help() {
@@ -149,11 +152,21 @@ list_rooms() {
 	echo "Getting Rooms..."
 	get '/_matrix/client/r0/sync'
 	
-	echo "Joined rooms:"
-	jq -r '.rooms.join | (to_entries[] | "  \(.key) - \(((.value.state.events + .value.timeline.events)[] | select(.type=="m.room.name") | .content.name) // "<Unnamed>")") // "  NONE"' <<<"$response"
+	local rooms=$(jq -r '.rooms.join | (to_entries[] | "  \(.key) - \(((.value.state.events + .value.timeline.events)[] | select(.type=="m.room.name") | .content.name) // "<Unnamed>")") // "  NONE"' <<<"$response" 2>/dev/null)
+	if [ -z "$rooms" ]; then
+    echo "I have not joined any rooms yet"  
+  else
+    echo "Joined rooms:"
+    echo "$rooms"
+  fi
+	local roomsInv=$(jq -r '.rooms.invite | (to_entries[] | "  \(.key) - \((.value.invite_state.events[] | select(.type=="m.room.name") | .content.name) // "Unnamed")") // "  NONE"' <<<"$response" 2>/dev/null)
 	echo
-	echo "Rooms I'm invited to:"
-	jq -r '.rooms.invite | (to_entries[] | "  \(.key) - \((.value.invite_state.events[] | select(.type=="m.room.name") | .content.name) // "Unnamed")") // "  NONE"' <<<"$response"
+	if [ -z "$roomsInv" ]; then
+	  echo "I'm not invited into any rooms"
+	else
+	  echo "Rooms I'm invited to:"
+	  echo "$roomsInv"
+	fi
 }	
 
 select_room() {
@@ -234,17 +247,23 @@ send_file() {
 	
 	# Query max filesize from server
 	get "/_matrix/media/r0/config"
-	max_size=`jq -r ".[\"m.upload.size\"]" <<<"$response"`
-	size=$(du -b "$FILE" | cut -f1)
+	max_size=$(jq -r ".[\"m.upload.size\"]" <<<"$response")
+	# Cross platform check (https://en.wikipedia.org/wiki/Uname)
+	case "$(uname -s)" in
+	  Darwin*) # OSX
+	    size=$(stat -f%z "$FILE");;
+	  *)
+	    size=$(stat --printf="%s" "$FILE");;
+	esac
 	if (( size > max_size )); then
 		die "File is too big. Size is $size, max_size is $max_size."
 	fi
-	filename=`basename "$FILE"`
+	filename=$(basename "$FILE")
 	log "filename: $filename"
-	content_type=`file --brief --mime-type "$FILE"`
+	content_type=$(file --brief --mime-type "$FILE")
 	log "content-type: $content_type"
 	upload_file "$FILE" "$content_type" "$filename"
-	uri=`jq -r .content_uri <<<"$response"`
+	uri=$(jq -r .content_uri <<<"$response")
 	
 	data="{\"body\":`escape "$filename"`, \"msgtype\":\"$FILE_TYPE\", \"filename\":`escape "$filename"`, \"url\":\"$uri\"}"
 	_send_message "$data"
@@ -252,7 +271,7 @@ send_file() {
 
 
 ######## Program flow stuff
-[ -r ~/.matrix.sh ] && source ~/.matrix.sh
+[ -r ~/.matrix.sh ] && . ~/.matrix.sh
 
 ACTION="send"
 HTML="false"
@@ -360,7 +379,7 @@ for i in "$@"; do
 	esac	
 done
 
-if [ "$ACTION" = "" ]; then
+if [ -z "$ACTION" ]; then
 	help
 	exit 1
 fi
@@ -379,25 +398,25 @@ fi
 
 AUTHORIZATION="Authorization: Bearer $MATRIX_TOKEN"
 
-if [ "$ACTION" = "select_room" ]; then
-	select_room
-elif [ "$ACTION" = "list_rooms" ]; then
-	list_rooms
-elif [ "$ACTION" = "join_room" ]; then
-	join_room
-elif [ "$ACTION" = "leave_room" ]; then
-	leave_room
-elif [ "$ACTION" = "invite_user" ]; then
-	invite_user
-elif [ "$ACTION" = "change_name" ]; then
-	change_name
-elif [ "$ACTION" = "send" ]; then
-	if [ "$FILE" = "" ]; then
-		[ -z "$TEXT" ] && die "No message to send given."
-		send_message "$TEXT"
-	else
-		send_file
-	fi
-fi
-    
-
+case "$ACTION" in
+  "select_room")
+    $ACTION;;
+  "list_rooms")
+    $ACTION;;
+  "join_room")
+    $ACTION;;
+  "leave_room")
+    $ACTION;;
+  "invite_user")
+    $ACTION;;
+  "change_name")
+    $ACTION;;
+  "send")
+    if [ "$FILE" = "" ]; then
+      [ -z "$TEXT" ] && die "No message to send."
+      send_message "$TEXT"
+    else
+      send_file
+    fi
+    ;;
+esac
