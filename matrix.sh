@@ -12,7 +12,7 @@ version() {
 	cat <<VERSION_EOF
 matrix.sh $VERSION
 forked from "matrix.sh by Fabian Schlenz"
-by Martin Winkler
+to synchronize with contributions by Martin Goellnitz, Martin Winkler, johncoffee, and Cédric Barreteau
 VERSION_EOF
 }
 
@@ -154,7 +154,7 @@ list_rooms() {
 
 	local rooms=$(jq -r '.rooms.join | (to_entries[] | "  \(.key) - \(((.value.state.events + .value.timeline.events)[] | select(.type=="m.room.name") | .content.name) // "<Unnamed>")") // "  NONE"' <<<"$response" 2>/dev/null)
 	if [ -z "$rooms" ]; then
-		echo "I have not joined any rooms yet"  
+		echo "I have not joined any rooms yet"
 	else
 		echo "Joined rooms:"
 		echo "$rooms"
