@@ -11,8 +11,8 @@ AUTHORIZATION="X-Dummy: 1"
 version() {
 	cat <<VERSION_EOF
 matrix.sh $VERSION
-forked from "matrix.sh by Fabian Schlenz"
-to synchronize with contributions by Martin Goellnitz, Martin Winkler, johncoffee, and Cédric Barreteau
+created by Fabian Schlenz
+improved with contributions by Martin Goellnitz, Martin Winkler, johncoffee, and Cédric Barreteau
 VERSION_EOF
 }
 
