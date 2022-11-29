@@ -98,9 +98,10 @@ put() {
 }
 
 upload_file() {
-	file="$1"
-	content_type="$2"
-	filename="$3"
+	local file="$1"
+	local content_type="$2"
+	local filename=
+	filename="$(encode "$3")"
 	response=$( _curl -XPOST --data-binary "@$file" -H "Content-Type: $content_type" "${MATRIX_HOMESERVER}/_matrix/media/r0/upload?filename=${filename}" )
 }
 
@@ -108,6 +109,12 @@ escape() {
 	local multil=
 	[ $(echo "$1" | wc -l) -gt 1 ] && multil="-s"
 	jq $multil -R . <<<"$1"
+}
+
+encode() {
+	local multil=
+	[ $(echo "$1" | wc -l) -gt 1 ] && multil="-s"
+	jq $multil -Rr @uri <<<"$1"
 }
 
 ############## Check for dependencies
@@ -258,13 +265,14 @@ send_file() {
 	if (( size > max_size )); then
 		die "File is too big. Size is $size, max_size is $max_size."
 	fi
-	filename=$(basename "$FILE")
+	filename="$(basename "$FILE")"
 	log "filename: $filename"
-	content_type=$(file --brief --mime-type "$FILE")
+	content_type="$(file --brief --mime-type "$FILE")"
 	log "content-type: $content_type"
 	upload_file "$FILE" "$content_type" "$filename"
-	uri=$(jq -r .content_uri <<<"$response")
+	[ -z "${response}" ] && return 1
 
+	uri="$(jq -r .content_uri <<<"$response")"
 	data="{\"body\":`escape "$filename"`, \"msgtype\":\"$FILE_TYPE\", \"filename\":`escape "$filename"`, \"url\":\"$uri\"}"
 	_send_message "$data"
 }
